@@ -56,10 +56,10 @@ def get_res(str):
 
 def print_help():
     print("\nUSAGE:\n\tthread_scraper.py [URL] [DESTINATION DIRECTORY]\n" +
-        "\tthread_scraper.py [URL] [DESTINATION DIRECTORY] [OPTIONS]\n" +
-        "\tthread_scraper.py [OPTIONS]\n\n"
+        "\tthread_scraper.py [URL] [DESTINATION DIRECTORY] [OPTION]...\n" +
+        "\tthread_scraper.py [OPTION]\n\n"
         "EXAMPLE:\n" +
-        "\tthread_scraper.py https://boards.4chan.org/b/thread/1234/ C:\\images\\\n\n" +
+        "\tthread_scraper.py https://boards.4chan.org/wg/thread/1234/ C:\\images\\\n\n" +
         "OPTIONS:\n" +
         "\t-r --resolution \tFilter out images smaller than the given resolution\n" +
         "\t-h --help \t\tShow this help message and exit\n" +
@@ -67,29 +67,27 @@ def print_help():
 
 verbose = False
 
-# first check for verbose flag in args 
+# first check for these flag in args 
 for n in range(len(sys.argv)):
     if sys.argv[n] == '-V' or sys.argv[n] == '--verbose':
         sys.argv.pop(n)
         verbose = True
-
-arg_n = len(sys.argv)
-
-if arg_n == 2:
-    if sys.argv[1]  == '-h' or sys.argv[1] == '--help': 
-        print_help();
-        exit(0)
-    if sys.argv[1] == '-v' or sys.argv[1] == '--version':
+    if (sys.argv[n] == '-h' or sys.argv[n] == '--help'):
+        print_help()
+        sys.argv.pop(n)
+    elif (sys.argv[n] == '-v' or sys.argv[n] == '--version'):
         print("\nThread Scraper version 1.0 LOL\n")
+        sys.argv.pop(n)
+
+if len(sys.argv) == 3:
+    if (args_are_valid()):
+        prepare_path(sys.argv[2])
+        download(sys.argv[1], sys.argv[2], verbose)
         exit(0)
     else: 
         print_help()
         exit(1)
-elif arg_n == 3 and args_are_valid():
-    prepare_path(sys.argv[2])
-    download(sys.argv[1], sys.argv[2], verbose)
-    exit(0)
-elif arg_n == 5 and (sys.argv[3] == '-r' or sys.argv[3] == '--resolution'): 
+elif len(sys.argv) == 5 and (sys.argv[3] == '-r' or sys.argv[3] == '--resolution'): 
     if resolution_arg_is_valid():
         prepare_path(sys.argv[2])
         download(sys.argv[1], sys.argv[2], verbose)
@@ -97,8 +95,5 @@ elif arg_n == 5 and (sys.argv[3] == '-r' or sys.argv[3] == '--resolution'):
         n_matches = filter_by_res(img_paths, get_res(sys.argv[4]))
         if verbose: print(f"{str(n_matches)}/{str(len(img_paths))} images in '{sys.argv[2]}' meet the resolution requirement")
     else: 
-        print("\nInvalid resolution format, please try something like: --resolution 1920x1080\n")
+        print("\nInvalid resolution format, please try something like: --resolution 1920x1080\nUse --help flag for more info")
         exit(1)
-else: 
-    print_help();
-    exit(1)
