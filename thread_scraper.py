@@ -24,7 +24,7 @@ def download(url, path, verbose):
 def get_img_paths(directory):
     img_paths = []
     for file in os.scandir(directory):
-        is_img = file.name.endswith('.jpg') or file.name.endswith('.png') or file.name.endswith('.gif')
+        is_media = file.name.endswith('.jpg') or file.name.endswith('.png') or file.name.endswith('.gif') or file.name.encode('.webm')
         if file.is_file() and is_img:
             img_paths.append(os.path.join(directory, file.name))
     return img_paths
