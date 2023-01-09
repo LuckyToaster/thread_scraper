@@ -94,21 +94,6 @@ for arg in sys.argv:
         sys.argv.remove(arg)
         print("\nThread Scraper version 1.0 LOL\n")
 
-"""
-c = 0
-while (len(sys.argv)) > 3:
-    if sys.argv[c] == '-V' or sys.argv[c] == '--verbose':
-        sys.argv.pop(c)
-        verbose = True
-    elif sys.argv[c] == '-h' or sys.argv[c] == '--help':
-        print_help()
-        sys.argv.pop(c)
-    elif sys.argv[c] == '-v' or sys.argv[c] == '--version':
-        print("\nThread Scraper version 1.0 LOL\n")
-        sys.argv.pop(n)
-    c += 1
-"""
-
 if len(sys.argv) == 3:
     if (args_are_valid()):
         prepare_path(sys.argv[2])
