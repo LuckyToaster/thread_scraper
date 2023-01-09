@@ -19,7 +19,7 @@ def get_media_paths(directory):
     img_paths = []
     for file in scandir(directory):
         # is this even necessary?
-        is_media = file.name.endswith('.jpg') or file.name.endswith('.png') or file.name.endswith('.gif') or file.name.encode('.webm')
+        is_media = file.name.endswith('.jpg') or file.name.endswith('.png') or file.name.endswith('.gif') or file.name.endswith('.webm')
         if file.is_file() and is_media: 
             img_paths.append(os.path.join(directory, file.name))
     return img_paths
