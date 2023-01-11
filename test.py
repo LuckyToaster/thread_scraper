@@ -12,13 +12,15 @@ def get_webm_res(source):
     remove(destination)
     return w, h
 
+def roon():
+    for file in scandir(source_dir):
+        if file.name.endswith('.webm'): 
+            print(file.name)
+            res = get_webm_res(path.join(source_dir, file.name))
+            print(f'{res} {res >= (600, 600)}')
+        elif file.name.endswith('.gif'): 
+            remove(path.join(source_dir, file.name))
+
 source_dir = "C:\\Users\\sench\\Desktop\\pics"
 
-for file in scandir(source_dir):
-    if file.name.endswith('.webm'): 
-        print(file.name)
-        res = get_webm_res(path.join(source_dir, file.name))
-        print(f'{res} {res >= (600, 600)}')
-    elif file.name.endswith('.gif'): 
-        remove(path.join(source_dir, file.name))
-
+roon()
