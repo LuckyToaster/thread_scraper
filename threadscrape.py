@@ -2,10 +2,10 @@ import requests, re
 from os import path, remove, scandir, makedirs
 from bs4 import BeautifulSoup as BS
 from threading import Thread
-from pyffmpeg import FFmpeg
 from PIL import Image
 from sys import argv
 from math import floor
+from ffmpeg import probe
 
 
 def get_hrefs(thread_url):
@@ -45,7 +45,6 @@ def download(hrefs, directory, verbose, thread_n):
 def get_media_paths(directory):
     img_paths = []
     for file in scandir(directory):
-        # is this even necessary?
         is_media = (file.name.endswith('.jpg') or file.name.endswith('.png') 
                 or file.name.endswith('.gif') or file.name.endswith('.webm'))
         if file.is_file() and is_media: 
@@ -53,33 +52,26 @@ def get_media_paths(directory):
     return img_paths
 
 
-def filter_by_res(img_paths, res):
-    matches  = 0
-    for path in img_paths:
-        if path.endswith('.webm') and get_webm_res(path) < res: 
+def filter_by_res(paths, res):
+    matches = 0
+    for path in paths:
+        if path.endswith('.webm') and get_vid_resolution(path) < res: 
             remove(path)
-        else:
-            img = Image.open(path)
-            if img.size < res:
-                img.close()
-                remove(path)
-            else: matches += 1
+        elif Image.open(path).size < res:
+            img.close()
+            remove(path)
+        else: matches += 1
     return matches
 
 
-def get_webm_res(webm_path):
-    destination = path.join(path.dirname(webm_path), 'test.png')
-    ff = FFmpeg().options(f'-i {webm_path} -vcodec png -ss 10 -vframes 1 -an -f rawvideo {destination}')
-    img = Image.open(destination)
-    w, h = img.size
-    img.close()
-    remove(destination)
-    return w, h
+def get_video_resolution(video_path):
+    data = [stream for stream in ffmpeg.probe(video_path)["streams"] if stream["codec_type"] == "video"][0]
+    return data['width'], data['height']
 
 
-def get_res_from_argument(str):
+def get_res_from_arg(str):
     res = str.split('x')
-    return [int(res[0].strip()), int(res[1].strip())]
+    return int(res[0].strip()), int(res[1].strip())
 
 
 def mkdir_if_not_exists(path_to_dir):
@@ -93,11 +85,6 @@ def args_are_valid():
 def resolution_arg_is_valid():
     if not argv[4].__contains__('x'): return False
     else: return (digit.isdigit() for digit in argv[4].split('x'))
-
-
-def get_res(str):
-    res = str.split('x')
-    return int(res[0].strip()), int(res[1].strip())
 
 
 def print_help():
@@ -149,7 +136,7 @@ def main():
             hrefs = get_hrefs(argv[1])
             download(hrefs, argv[2], verbose, thread_n)
             media_paths = get_media_paths(argv[2])
-            n_matches = filter_by_res(media_paths, get_res(argv[4]))
+            n_matches = filter_by_res(media_paths, get_res_from_arg(argv[4]))
         if verbose: 
             print(f"{str(n_matches)}/{str(len(media_paths))} images in '{argv[2]}' meet the resolution requirement")
     else: 
