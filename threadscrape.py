@@ -16,6 +16,7 @@ def get_hrefs(thread_url):
         href = link.get('href')
         if re.search('^//i.4cdn.org', href): 
             hrefs.append(href) 
+    print('hrefs done')
     return hrefs
 
 
@@ -29,6 +30,7 @@ def job(hrefs, directory, verbose):
 
 
 def download(hrefs, directory, verbose, thread_n):
+    print('downloading ...')
     chunk_size = int(floor(len(hrefs) / thread_n))
     remaining_hrefs = len(hrefs) - (thread_n * chunk_size)
     chunked_hrefs = [hrefs[i:i + chunk_size] for i in range(0, len(hrefs), chunk_size)]
@@ -37,12 +39,13 @@ def download(hrefs, directory, verbose, thread_n):
         [chunked_hrefs[i].append(hrefs[(chunk_size * thread_n) + i]) for i in range(remaining_hrefs)]
 
     threads = [Thread(target=job, args=(chunked_hrefs[i], directory, verbose)) for i in range(thread_n)]
+
     [thread.start() for thread in threads]
     [thread.join() for thread in threads]
-    #[(thread.start(), thread.join()) for thread in threads]
 
 
 def get_media_paths(directory):
+    print('getting media paths')
     img_paths = []
     for file in scandir(directory):
         is_media = (file.name.endswith('.jpg') or file.name.endswith('.png') 
@@ -53,10 +56,12 @@ def get_media_paths(directory):
 
 
 def filter_by_res(paths, res):
+    print('filtering by res')
     matches = 0
     for path in paths:
-        if path.endswith('.webm') and get_vid_resolution(path) < res: 
-            remove(path)
+        if path.endswith('.webm'):
+            if get_vid_resolution(path) < res: 
+                remove(path)
         elif Image.open(path).size < res:
             img.close()
             remove(path)
@@ -65,6 +70,7 @@ def filter_by_res(paths, res):
 
 
 def get_video_resolution(video_path):
+    print('getting res')
     data = [stream for stream in ffmpeg.probe(video_path)["streams"] if stream["codec_type"] == "video"][0]
     return data['width'], data['height']
 
@@ -74,17 +80,17 @@ def get_res_from_arg(str):
     return int(res[0].strip()), int(res[1].strip())
 
 
+def resolution_arg_is_valid():
+    if not argv[4].__contains__('x'): return False
+    else: return (digit.isdigit() for digit in argv[4].split('x'))
+
+
 def mkdir_if_not_exists(path_to_dir):
     if not path.exists(path_to_dir): makedirs(path_to_dir)
 
 
 def args_are_valid():
     return argv[1].__contains__('thread') and path.exists(argv[2])
-
-
-def resolution_arg_is_valid():
-    if not argv[4].__contains__('x'): return False
-    else: return (digit.isdigit() for digit in argv[4].split('x'))
 
 
 def print_help():
