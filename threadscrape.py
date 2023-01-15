@@ -62,10 +62,11 @@ def filter_by_res(paths, res):
         if path.endswith('.webm'):
             if get_vid_resolution(path) < res: 
                 remove(path)
-        elif Image.open(path).size < res:
+        else: 
+            img = Image.open(path)
+            if img.size < res: remove(path)
             img.close()
-            remove(path)
-        else: matches += 1
+        matches += 1
     return matches
 
 
@@ -90,7 +91,7 @@ def mkdir_if_not_exists(path_to_dir):
 
 
 def args_are_valid():
-    return argv[1].__contains__('thread') and path.exists(argv[2])
+    return argv[1].__contains__('thread')
 
 
 def print_help():
@@ -106,47 +107,47 @@ def print_help():
         "\t-t --threads Number of threads to use for download")
 
 
-def main():
-    if len(argv) == 1: 
+if len(argv) == 1: 
+    print_help()
+    exit(1)
+
+verbose = False
+thread_n = 4
+n_matches = 0
+media_paths = []
+
+# first check for these flag in args 
+for arg in argv:
+    if arg == '-V' or arg == '--verbose':
+        argv.remove(arg)
+        verbose = True
+    elif arg == '-h' or arg == '--help':
+        argv.remove(arg)
+        print_help()
+    elif arg == '-v' or arg == '--version':
+        argv.remove(arg)
+        print("\nThread Scraper version 1.0 LOL\n")
+
+if len(argv) == 3:
+    if (args_are_valid()):
+        mkdir_if_not_exists(argv[2])
+        hrefs = get_hrefs(argv[1])
+        download(hrefs, argv[2], verbose, thread_n)
+        exit(0)
+    else: 
+        print("\nERROR: Invalid arguments\n")
         print_help()
         exit(1)
+elif len(argv) == 5 and (argv[3] == '-r' or argv[3] == '--resolution'): 
+    if args_are_valid() and resolution_arg_is_valid():
+        mkdir_if_not_exists(argv[2])
+        hrefs = get_hrefs(argv[1])
+        download(hrefs, argv[2], verbose, thread_n)
+        media_paths = get_media_paths(argv[2])
+        n_matches = filter_by_res(media_paths, get_res_from_arg(argv[4]))
+    if verbose: 
+        print(f"{str(n_matches)}/{str(len(media_paths))} images in '{argv[2]}' meet the resolution requirement")
+else: 
+    print("\nInvalid resolution format, please try something like: --resolution 1920x1080\nUse --help flag for more info")
+    exit(1)
 
-    verbose = False
-    thread_n = 4
-
-    # first check for these flag in args 
-    for arg in argv:
-        if arg == '-V' or arg == '--verbose':
-            argv.remove(arg)
-            verbose = True
-        elif arg == '-h' or arg == '--help':
-            argv.remove(arg)
-            print_help()
-        elif arg == '-v' or arg == '--version':
-            argv.remove(arg)
-            print("\nThread Scraper version 1.0 LOL\n")
-
-    if len(argv) == 3:
-        if (args_are_valid()):
-            mkdir_if_not_exists(argv[2])
-            hrefs = get_hrefs(argv[1])
-            download(hrefs, argv[2], verbose, thread_n)
-            exit(0)
-        else: 
-            print("\nERROR: Invalid arguments\n")
-            print_help()
-            exit(1)
-    elif len(argv) == 5 and (argv[3] == '-r' or argv[3] == '--resolution'): 
-        if args_are_valid() and resolution_arg_is_valid():
-            mkdir_if_not_exists(argv[2])
-            hrefs = get_hrefs(argv[1])
-            download(hrefs, argv[2], verbose, thread_n)
-            media_paths = get_media_paths(argv[2])
-            n_matches = filter_by_res(media_paths, get_res_from_arg(argv[4]))
-        if verbose: 
-            print(f"{str(n_matches)}/{str(len(media_paths))} images in '{argv[2]}' meet the resolution requirement")
-    else: 
-        print("\nInvalid resolution format, please try something like: --resolution 1920x1080\nUse --help flag for more info")
-        exit(1)
-
-main()
