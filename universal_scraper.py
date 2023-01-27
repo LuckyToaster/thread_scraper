@@ -5,15 +5,13 @@ from threading import Thread
 from PIL import Image
 from math import floor
 
-def get_hrefs(thread_url):
-    request = requests.get(thread_url)
-    links = BeautifulSoup(request.content, 'html.parser').find_all('a')
-    hrefs = []
-    for link in links:
-        href = link.get('href')
-        if re.search('^//i.4cdn.org', href): 
-            hrefs.append(href) 
-    return hrefs
+def get_hrefs(url):
+    response = requests.get(url)
+    html_content = response.text
+    soup = BeautifulSoup(html_content, 'html.parser')
+    a_tags = soup.find_all('a')
+    #hrefs = [a['href'] for a in a_tags if 'href' in a.attrs]
+    return [a.get('href') for a in a_tags if a.get('href')]
 
 
 # Jobs for the threads in download
@@ -28,22 +26,17 @@ def job(hrefs, directory, verbose):
 
 def download(hrefs, directory, verbose, resolution, thread_n):
     print('downloading ...')
-    if len(hrefs) > thread_n:
-        chunk_size = int(floor(len(hrefs) / int(thread_n)))
-        remaining_hrefs = len(hrefs) - (thread_n * chunk_size)
-        chunked_hrefs = [hrefs[i:i + chunk_size] for i in range(0, len(hrefs), chunk_size)]
+    chunk_size = int(floor(len(hrefs) / int(thread_n)))
+    remaining_hrefs = len(hrefs) - (thread_n * chunk_size)
+    chunked_hrefs = [hrefs[i:i + chunk_size] for i in range(0, len(hrefs), chunk_size)]
 
-        if remaining_hrefs > 0: 
-            [chunked_hrefs[i].append(hrefs[(chunk_size * thread_n) + i]) for i in range(remaining_hrefs)]
+    if remaining_hrefs > 0: 
+        [chunked_hrefs[i].append(hrefs[(chunk_size * thread_n) + i]) for i in range(remaining_hrefs)]
 
-        threads = [Thread(target=job, args=(chunked_hrefs[i], directory, verbose)) for i in range(thread_n)]
+    threads = [Thread(target=job, args=(chunked_hrefs[i], directory, verbose)) for i in range(thread_n)]
 
-        [thread.start() for thread in threads]
-        [thread.join() for thread in threads]
-    else:
-        t = Thread(target=job, args=(hrefs, directory, verbose))
-        t.start()
-        t.join()
+    [thread.start() for thread in threads]
+    [thread.join() for thread in threads]
 
 
 def get_media_paths(directory):
@@ -91,7 +84,7 @@ def parse_args():
     parser.add_argument('thread_url', type=str, help='The URL of the thread to scrape.')
     parser.add_argument('directory', type=str, help='The directory to save the images in.')
     parser.add_argument('-v', '--verbose', action='store_true', help='Prints the URLs of the images as they are downloaded.')
-    parser.add_argument('-t', '--threads', type=int, default=5, help='The number of threads to use for downloading. Default is 4.')
+    parser.add_argument('-t', '--threads', type=int, default=5, help='The number of threads to use for downloading. Default is 5.')
     parser.add_argument('-r', '--resolution', type=str, help='The resolution to filter the images by. Default is 0x0.')
     return parser.parse_args()
 
@@ -101,7 +94,6 @@ if __name__ == '__main__':
 
     mkdir_if_not_exists(args.directory)
     hrefs = get_hrefs(args.thread_url)
-    print(f'hrefs size: {len(hrefs)}')
     download(hrefs, args.directory, args.verbose, args.thread_url, args.threads)
 
     if args.resolution:
@@ -110,5 +102,4 @@ if __name__ == '__main__':
         n_matches = filter_by_res(media_paths, get_res_from_arg(args.resolution))
         if args.verbose:
             print(f"{str(n_matches)}/{str(len(media_paths))} images in '{args.directory}' meet the resolution requirement")
-
 
