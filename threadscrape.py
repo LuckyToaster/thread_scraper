@@ -1,25 +1,22 @@
-import requests, re 
+import re, argparse, requests
 from os import path, remove, scandir, makedirs
-from bs4 import BeautifulSoup as BS
+from bs4 import BeautifulSoup
 from threading import Thread
 from PIL import Image
-from sys import argv
 from math import floor
-from ffmpeg import probe
-
 
 def get_hrefs(thread_url):
     request = requests.get(thread_url)
-    links = BS(request.content, 'html.parser').findAll('a')
+    links = BeautifulSoup(request.content, 'html.parser').find_all('a')
     hrefs = []
     for link in links:
         href = link.get('href')
         if re.search('^//i.4cdn.org', href): 
             hrefs.append(href) 
-    print('hrefs done')
     return hrefs
 
 
+# Jobs for the threads in download
 def job(hrefs, directory, verbose):
     for href in hrefs:
         fullpath = path.join(directory, href[-17:])
@@ -29,9 +26,9 @@ def job(hrefs, directory, verbose):
                 print('https:' + href + ' => ' + fullpath) 
 
 
-def download(hrefs, directory, verbose, thread_n):
+def download(hrefs, directory, verbose, resolution, thread_n):
     print('downloading ...')
-    chunk_size = int(floor(len(hrefs) / thread_n))
+    chunk_size = int(floor(len(hrefs) / int(thread_n)))
     remaining_hrefs = len(hrefs) - (thread_n * chunk_size)
     chunked_hrefs = [hrefs[i:i + chunk_size] for i in range(0, len(hrefs), chunk_size)]
 
@@ -48,32 +45,26 @@ def get_media_paths(directory):
     print('getting media paths')
     img_paths = []
     for file in scandir(directory):
-        is_media = (file.name.endswith('.jpg') or file.name.endswith('.png') 
-                or file.name.endswith('.gif') or file.name.endswith('.webm'))
-        if file.is_file() and is_media: 
+        if file.is_file() and (file.name.endswith('.jpg') or file.name.endswith('.png') 
+                or file.name.endswith('.gif') or file.name.endswith('.webm')):
             img_paths.append(path.join(directory, file.name))
     return img_paths
 
 
 def filter_by_res(paths, res):
-    print('filtering by res')
     matches = 0
     for path in paths:
         if path.endswith('.webm'):
-            if get_vid_resolution(path) < res: 
+            if get_video_resolution(path) < res: 
                 remove(path)
+                matches += 1
         else: 
             img = Image.open(path)
-            if img.size < res: remove(path)
-            img.close()
-        matches += 1
+            if img.size < res: 
+                img.close()
+                remove(path)
+                matches += 1
     return matches
-
-
-def get_video_resolution(video_path):
-    print('getting res')
-    data = [stream for stream in ffmpeg.probe(video_path)["streams"] if stream["codec_type"] == "video"][0]
-    return data['width'], data['height']
 
 
 def get_res_from_arg(str):
@@ -81,73 +72,37 @@ def get_res_from_arg(str):
     return int(res[0].strip()), int(res[1].strip())
 
 
-def resolution_arg_is_valid():
-    if not argv[4].__contains__('x'): return False
-    else: return (digit.isdigit() for digit in argv[4].split('x'))
+def get_video_resolution(video_path):
+    data = [stream for stream in probe(video_path)["streams"] if stream["codec_type"] == "video"][0]
+    return data['width'], data['height']
 
 
 def mkdir_if_not_exists(path_to_dir):
     if not path.exists(path_to_dir): makedirs(path_to_dir)
 
 
-def args_are_valid():
-    return argv[1].__contains__('thread')
+def parse_args():
+    parser = argparse.ArgumentParser(description='Scrapes an imageboard thread and downloads the images.')
+    parser.add_argument('thread_url', type=str, help='The URL of the thread to scrape.')
+    parser.add_argument('directory', type=str, help='The directory to save the images in.')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Prints the URLs of the images as they are downloaded.')
+    parser.add_argument('-t', '--threads', type=int, default=5, help='The number of threads to use for downloading. Default is 5.')
+    parser.add_argument('-r', '--resolution', type=str, help='The resolution to filter the images by. Default is 0x0.')
+    return parser.parse_args()
 
 
-def print_help():
-    print("\nUSAGE:\n\tthread_scraper.py [URL] [DESTINATION DIRECTORY]\n" +
-        "\tthread_scraper.py [URL] [DESTINATION DIRECTORY] [OPTION]...\n" +
-        "\tthread_scraper.py [OPTION]\n\n"
-        "EXAMPLE:\n" +
-        "\tthread_scraper.py https://boards.4chan.org/wg/thread/1234/ C:\\images\\\n\n" +
-        "OPTIONS:\n" +
-        "\t-r --resolution \tFilter out images smaller than the given resolution\n" +
-        "\t-h --help \t\tShow this help message and exit\n" +
-        "\t-v --version\n\t-V --verbose\n" +
-        "\t-t --threads Number of threads to use for download")
+if __name__ == '__main__':
+    args = parse_args()
 
+    mkdir_if_not_exists(args.directory)
+    hrefs = get_hrefs(args.thread_url)
+    download(hrefs, args.directory, args.verbose, args.thread_url, args.threads)
 
-if len(argv) == 1: 
-    print_help()
-    exit(1)
+    if args.resolution:
+        print(f'resolution is {args.resolution}')
+        media_paths = get_media_paths(args.directory)
+        n_matches = filter_by_res(media_paths, get_res_from_arg(args.resolution))
+        if args.verbose:
+            print(f"{str(n_matches)}/{str(len(media_paths))} images in '{args.directory}' meet the resolution requirement")
 
-verbose = False
-thread_n = 4
-n_matches = 0
-media_paths = []
-
-# first check for these flag in args 
-for arg in argv:
-    if arg == '-V' or arg == '--verbose':
-        argv.remove(arg)
-        verbose = True
-    elif arg == '-h' or arg == '--help':
-        argv.remove(arg)
-        print_help()
-    elif arg == '-v' or arg == '--version':
-        argv.remove(arg)
-        print("\nThread Scraper version 1.0 LOL\n")
-
-if len(argv) == 3:
-    if (args_are_valid()):
-        mkdir_if_not_exists(argv[2])
-        hrefs = get_hrefs(argv[1])
-        download(hrefs, argv[2], verbose, thread_n)
-        exit(0)
-    else: 
-        print("\nERROR: Invalid arguments\n")
-        print_help()
-        exit(1)
-elif len(argv) == 5 and (argv[3] == '-r' or argv[3] == '--resolution'): 
-    if args_are_valid() and resolution_arg_is_valid():
-        mkdir_if_not_exists(argv[2])
-        hrefs = get_hrefs(argv[1])
-        download(hrefs, argv[2], verbose, thread_n)
-        media_paths = get_media_paths(argv[2])
-        n_matches = filter_by_res(media_paths, get_res_from_arg(argv[4]))
-    if verbose: 
-        print(f"{str(n_matches)}/{str(len(media_paths))} images in '{argv[2]}' meet the resolution requirement")
-else: 
-    print("\nInvalid resolution format, please try something like: --resolution 1920x1080\nUse --help flag for more info")
-    exit(1)
 
