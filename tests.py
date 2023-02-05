@@ -30,8 +30,5 @@ def download_media(hrefs, download_path):
                 print(f'Error: {e}')
 
 
-# Example usage
-#hrefs = ['https://example.com/image1.jpg', 'https://example.com/video1.mp4', 'https://example.com/text.txt']
-print("enter a url: ")
-hrefs = get_hrefs(input())
-download_media(hrefs, 'C:\\Users\\sench\\Dekstop\\test')
+import sysconfig
+print(sysconfig.get_path("include"))

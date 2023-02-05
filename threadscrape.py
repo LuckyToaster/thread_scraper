@@ -1,17 +1,21 @@
-import re, argparse, requests
-from os import path, remove, scandir, makedirs
+from os import path, remove, scandir, makedirs, rmdir
+from requests import get
+from re import search
+from math import floor
+from shutil import rmtree
 from bs4 import BeautifulSoup
 from threading import Thread
 from PIL import Image
-from math import floor
+from argparse import ArgumentParser
+
 
 def get_hrefs(thread_url):
-    request = requests.get(thread_url)
+    request = get(thread_url)
     links = BeautifulSoup(request.content, 'html.parser').find_all('a')
     hrefs = []
     for link in links:
         href = link.get('href')
-        if re.search('^//i.4cdn.org', href): 
+        if search('^//i.4cdn.org', href): 
             hrefs.append(href) 
     return hrefs
 
@@ -21,7 +25,7 @@ def job(hrefs, directory, verbose):
     for href in hrefs:
         fullpath = path.join(directory, href[-17:])
         with open(fullpath, 'w+b') as f:
-            f.write(requests.get('http:' + href).content)
+            f.write(get('http:' + href).content)
             if verbose: 
                 print('https:' + href + ' => ' + fullpath) 
 
@@ -87,7 +91,7 @@ def mkdir_if_not_exists(path_to_dir):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Scrapes an imageboard thread and downloads the images.')
+    parser = ArgumentParser(description='Scrapes an imageboard thread and downloads the images.')
     parser.add_argument('thread_url', type=str, help='The URL of the thread to scrape.')
     parser.add_argument('directory', type=str, help='The directory to save the images in.')
     parser.add_argument('-v', '--verbose', action='store_true', help='Prints the URLs of the images as they are downloaded.')
@@ -110,5 +114,3 @@ if __name__ == '__main__':
         n_matches = filter_by_res(media_paths, get_res_from_arg(args.resolution))
         if args.verbose:
             print(f"{str(n_matches)}/{str(len(media_paths))} images in '{args.directory}' meet the resolution requirement")
-
-

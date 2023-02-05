@@ -13,6 +13,12 @@ def get_hrefs(url):
     #hrefs = [a['href'] for a in a_tags if 'href' in a.attrs]
     return [a.get('href') for a in a_tags if a.get('href')]
 
+def get_hrefs_2(url):
+    response = requests.get(url)
+    html_content = response.text
+    soup = BeautifulSoup(html_content, 'html.parser')
+    a_tags = soup.find_all('a')
+
 
 # Jobs for the threads in download
 def job(hrefs, directory, verbose):
