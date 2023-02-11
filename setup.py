@@ -11,4 +11,4 @@ except: print("\nDEPENDENCIES COULDN'T BE INSTALLED\n")
 try:
     subprocess.run(['pyinstaller', '--onefile', 'threadscrape.py'])
     print("\nEXECUTABLE SUCCESFULLY COMPILED\n")
-except: print("COMPILATION FAILED\n")
+except: print("\nCOMPILATION FAILED\n")
