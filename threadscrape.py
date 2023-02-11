@@ -54,8 +54,7 @@ def get_media_paths(directory):
     print('getting media paths')
     img_paths = []
     for file in scandir(directory):
-        if file.is_file() and (file.name.endswith('.jpg') or file.name.endswith('.png') 
-                or file.name.endswith('.gif') or file.name.endswith('.webm')):
+        if file.is_file() and file.name.endswith(('.jpg', '.png', '.gif', '.webm')):
             img_paths.append(path.join(directory, file.name))
     return img_paths
 
@@ -64,15 +63,14 @@ def filter_by_res(paths, res):
     matches = 0
     for path in paths:
         if path.endswith('.webm'):
-            if get_video_resolution(path) < res: 
-                remove(path)
-                matches += 1
+            if get_video_resolution(path) < res: remove(path)
+            else: matches += 1
         else: 
             img = Image.open(path)
             if img.size < res: 
                 img.close()
                 remove(path)
-                matches += 1
+            else: matches += 1
     return matches
 
 
