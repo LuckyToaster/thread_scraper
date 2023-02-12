@@ -95,15 +95,18 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == '__main__':
-    args = parse_args()
+try:
+    if __name__ == '__main__':
+        args = parse_args()
 
-    mkdir_if_not_exists(args.directory)
-    hrefs = get_hrefs(args.thread_url)
-    download(hrefs, args.directory, args.verbose, args.thread_url, args.threads)
+        mkdir_if_not_exists(args.directory)
+        hrefs = get_hrefs(args.thread_url)
+        download(hrefs, args.directory, args.verbose, args.thread_url, args.threads)
 
-    if args.resolution:
-        media_paths = get_media_paths(args.directory)
-        n_matches = filter_by_res(media_paths, get_res_from_arg(args.resolution))
-        if args.verbose:
-            print(f"{str(n_matches)}/{str(len(media_paths))} images in {args.directory} meet the resolution requirement")
+        if args.resolution:
+            media_paths = get_media_paths(args.directory)
+            n_matches = filter_by_res(media_paths, get_res_from_arg(args.resolution))
+            if args.verbose:
+                print(f"{str(n_matches)}/{str(len(media_paths))} images in {args.directory} meet the resolution requirement")
+except ModuleNotFoundError: 
+    print(f"Please run the 'setup.py' script to download missing modules, and install this script as an executable") 

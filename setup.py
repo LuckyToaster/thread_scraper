@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import subprocess, sys, os
 
-modules = ['bs4', 'pillow', 'requests', 'pyinstaller']
+modules = ['bs4', 'pillow', 'requests', 'pyinstaller', 'argparse']
 downloaded_modules, compiled = False, False
 
 try:
