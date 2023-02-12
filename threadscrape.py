@@ -1,8 +1,7 @@
-from os import path, remove, scandir, makedirs, rmdir
+from os import path, remove, scandir, makedirs
 from requests import get
 from re import search
 from math import floor
-from shutil import rmtree
 from bs4 import BeautifulSoup
 from threading import Thread
 from PIL import Image
@@ -31,7 +30,6 @@ def job(hrefs, directory, verbose):
 
 
 def download(hrefs, directory, verbose, resolution, thread_n):
-    print('downloading ...')
     if len(hrefs) > thread_n:
         chunk_size = int(floor(len(hrefs) / int(thread_n)))
         remaining_hrefs = len(hrefs) - (thread_n * chunk_size)
@@ -51,7 +49,6 @@ def download(hrefs, directory, verbose, resolution, thread_n):
 
 
 def get_media_paths(directory):
-    print('getting media paths')
     img_paths = []
     for file in scandir(directory):
         if file.is_file() and file.name.endswith(('.jpg', '.png', '.gif', '.webm')):
@@ -103,12 +100,10 @@ if __name__ == '__main__':
 
     mkdir_if_not_exists(args.directory)
     hrefs = get_hrefs(args.thread_url)
-    print(f'hrefs size: {len(hrefs)}')
     download(hrefs, args.directory, args.verbose, args.thread_url, args.threads)
 
     if args.resolution:
-        print(f'resolution is {args.resolution}')
         media_paths = get_media_paths(args.directory)
         n_matches = filter_by_res(media_paths, get_res_from_arg(args.resolution))
         if args.verbose:
-            print(f"{str(n_matches)}/{str(len(media_paths))} images in '{args.directory}' meet the resolution requirement")
+            print(f"{str(n_matches)}/{str(len(media_paths))} images in {args.directory} meet the resolution requirement")
