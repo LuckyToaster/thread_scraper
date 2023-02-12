@@ -26,4 +26,4 @@ if compiled:
             subprocess.call('setx PATH "%s"' % os.environ['PATH'], shell=True)
 
         print('\nEXECUTABLE ADDED TO PATH')
-    except: print('\nEXECUTABLE COULD NOT BE ADDED TO PATH')
+    except: print('\nEXECUTABLE COULD NOT BE ADDED TO PATH\n')
